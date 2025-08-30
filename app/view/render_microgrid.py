@@ -8,6 +8,8 @@ from view.htmlFunctions.center import centerText
 
 def render_microgrid():
 
+    HOST = "http://ems"
+
     centerText("Le BESS est en isochrone, il assume les variations de charge, l'EMS adapte le setpoint du genset en P/Q")
     st.markdown("""
     <style>
@@ -42,7 +44,7 @@ def render_microgrid():
 
     # récupérer les données
     try:
-        resp = requests.get("http://127.0.0.1:8000/status")
+        resp = requests.get(f"{HOST}:8000/status")
         resp.raise_for_status()
         data = resp.json()
     except:
@@ -54,7 +56,7 @@ def render_microgrid():
     with col:
         if st.button("restart ems", use_container_width=True):
             try:
-                resp = requests.post("http://127.0.0.1:8000/restart")
+                resp = requests.post(f"{HOST}:8000/restart")
                 resp.raise_for_status()
             except:
                 st.error("HTTP error: cannot restart EMS")
@@ -134,7 +136,7 @@ def render_microgrid():
         if submit:
             try:
                 resp = requests.post(
-                    "http://127.0.0.1:8000/setpvp",
+                   f"{HOST}:8000/setpvp",
                     json={"P_pv": pv_value,
                           "P_load": load_value}
                 )
@@ -168,7 +170,7 @@ def render_microgrid():
         if submit:
             try:
                 resp = requests.post(
-                    "http://127.0.0.1:8000/setconf",
+                    f"{HOST}:8000/setconf",
                     json={"p_max_bess": bess_p_max_value,
                           "cap_bess": bess_cap_value,
                           "p_max_genset": genset_p_max_value}

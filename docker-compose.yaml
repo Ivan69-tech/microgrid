@@ -1,0 +1,24 @@
+services:
+  ems:
+    image: ems  
+    container_name: ems
+    ports:
+      - "8001:8000"              
+    networks:
+      - net
+    restart: unless-stopped
+
+  microgrid-app:
+    image: microgrid-app  
+    container_name: microgrid-app
+    ports:
+      - "8503:8501"              
+    networks:
+      - net
+    depends_on:
+      - ems
+    restart: unless-stopped
+
+networks:
+  net:
+    external: true
