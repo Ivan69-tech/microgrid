@@ -12,7 +12,7 @@ services:
     image: microgrid-app  
     container_name: microgrid-app
     ports:
-      - "8503:8501"              
+      - "8505:8501"              
     networks:
       - net
     depends_on:
