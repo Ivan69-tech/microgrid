@@ -1,0 +1,16 @@
+dt: 1
+
+genset:
+  max_p_kW: 1200
+
+pv:
+  p_kW: 200
+
+bess:
+  cap_kwh: 20
+  max_p_kw: 1200
+  f_nom: 50
+  u_nom: 400
+
+load:
+  load: 1500
