@@ -2,15 +2,19 @@ import streamlit as st
 import requests
 from collections import deque
 import pandas as pd
-from view.component.chart import AltChart
+from view.component.chart import AltChartMulti
 from view.htmlFunctions.center import centerText
 
 
 def render_microgrid():
 
     HOST = "http://ems"
-
-    centerText("Le BESS est en isochrone, il assume les variations de charge, l'EMS adapte le setpoint du genset en P/Q")
+    centerText("Simulation d'un EMS off grid")
+    centerText("Le BESS est en isochrone, il assume les variations de charge et tient le réseau. L'EMS adapte le setpoint du genset en P/Q mais n'a pas la main sur PV")
+    centerText("Le BESS se décharge si le PV ne peut pas assumer toute la charge, si la batterie est complètement déchargée, le genset doit prendre la charge")
+    centerText("Si le genset ne parvient pas à assurer toute la charge, c'est blackout. Attention donc au niveau de la load et à la puissance maximale de chacun des actifs !")
+    centerText("Augmente le PV si tu veux recharger la batterie (mais attention à la limite de puissance du BESS!)")
+    
     st.markdown("""
     <style>
     .row-widget.stColumns [class*="column"] {
@@ -116,7 +120,7 @@ def render_microgrid():
     
     col1, col2= st.columns(2)
     with col2:
-        centerText("<br>")
+        centerText("Attention à ne pas trop injecter de PV sur le réseau au risque d'un blackout, ou demander une charge trop importante.")
         with st.form(key="pv_form"):
             pv_value = st.number_input(
                 "Entrer la puissance PV (kW)",
@@ -246,26 +250,37 @@ def render_microgrid():
         st.session_state.p_pv = deque(maxlen=10)
     if "p_load" not in st.session_state:    
         st.session_state.p_load = deque(maxlen=10)
-
+    if "soc" not in st.session_state:    
+        st.session_state.soc = deque(maxlen=10)
+    
     st.session_state.p_bess.append(data["P_bess"])
     st.session_state.p_genset.append(data["P_genset"])
     st.session_state.p_pv.append(data["P_pv"])
     st.session_state.p_load.append(data["load"])
+    st.session_state.soc.append(data["SOC"])
 
     df_bess = pd.DataFrame({"x": range(len(st.session_state.p_bess)), "y": st.session_state.p_bess})
     df_genset = pd.DataFrame({"x": range(len(st.session_state.p_genset)), "y": st.session_state.p_genset})
     df_pv = pd.DataFrame({"x": range(len(st.session_state.p_pv)), "y": st.session_state.p_pv})
     df_load = pd.DataFrame({"x": range(len(st.session_state.p_load)), "y": st.session_state.p_load})
+    df_soc = pd.DataFrame({"x": range(len(st.session_state.soc)), "y": st.session_state.soc})
 
-    col1, col2 = st.columns(2)
-    with col1:
-        centerText("Puissance BESS kW")
-        AltChart(df_bess, xlabel="X", ylabel="P Bess kW ")
-        centerText("Puissance Genset kW")
-        AltChart(df_genset, xlabel="X", ylabel="P genset kW ")
-    
-    with col2:
-        centerText("Puissance PV kW")
-        AltChart(df_pv, xlabel="X", ylabel="P PV kW ")
-        centerText("Load kW")
-        AltChart(df_load, xlabel="X", ylabel="Load kW ")
+    centerText("Courbes Puissance (kW)")
+    AltChartMulti(
+        datasets=[
+            {"df": df_bess, "label": "BESS", "color": "#007bff"},
+            {"df": df_genset, "label": "Genset", "color": "#28a745"},
+            {"df": df_pv, "label": "PV", "color": "#ffc107"},
+            {"df": df_load, "label": "Load", "color": "#dc3545"}
+        ],
+        xlabel="X",
+        ylabel="Puissance (kW)"
+    )
+    centerText("SOC BESS (%)")
+    AltChartMulti(
+        datasets=[
+            {"df": df_soc, "label": "BESS SOC", "color": "#210fc5"},
+        ],
+        xlabel="X",
+        ylabel="SOC (%)"
+    )

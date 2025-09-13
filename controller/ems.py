@@ -66,7 +66,7 @@ class ems:
         self.count = 0  # reset compteur
         self.bess.soc = 50  # ou valeur initiale de SOC
         self.blackout = False
-        self.load.load = 1500
+        self.load.load = 1000
         self.start()  # relance le thread
 
     def blackout_conditions(self):
