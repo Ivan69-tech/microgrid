@@ -120,6 +120,29 @@ def render_microgrid():
     
     col1, col2= st.columns(2)
     with col2:
+
+        # Utilisation d'un slider/toggle natif Streamlit
+        if "pv_control_on" not in st.session_state:
+            st.session_state.pv_control_on = False
+
+        pv_control = st.toggle(
+            "Maximise la prod PV automatiquement (l'EMS prend la main)",
+            value=st.session_state.pv_control_on,
+            help="Active ou désactive le contrôle du PV"
+        )
+        # Envoi du POST si changement d'état
+        if "pv_control_last" not in st.session_state:
+            st.session_state.pv_control_last = st.session_state.pv_control_on
+        if pv_control != st.session_state.pv_control_last:
+            try:
+                resp = requests.post(f"{HOST}:8000/controlpv", json={"controlPv": pv_control})
+                resp.raise_for_status()
+            except Exception as e:
+                st.error(f"Erreur HTTP (PV control): {e}")
+            st.session_state.pv_control_last = pv_control
+        st.session_state.pv_control_on = pv_control
+        centerText(str(data["controlPv"]))
+
         centerText("Attention à ne pas trop injecter de PV sur le réseau au risque d'un blackout, ou demander une charge trop importante.")
         with st.form(key="pv_form"):
             pv_value = st.number_input(
