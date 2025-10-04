@@ -27,6 +27,6 @@ jobs:
             git pull origin main
 
             docker build -t microgrid-app ./app
-            docker build -t microgrid-controller ./controller
+            docker build -t ems ./controller
 
             docker-compose up -d

@@ -71,7 +71,5 @@ def controlPV(input: ControlPV):
     return {"status": "PV control updated"}
 
 
-
-
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
