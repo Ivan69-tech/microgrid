@@ -21,7 +21,7 @@ class ems:
         )
         self.PV = PV(conf["pv"]["p_kW"])
         self.load = Load(conf["load"]["load"])
-
+        self.controlPv = False
         self.count = 0
         self.running = False
         self.thread = None
@@ -31,9 +31,14 @@ class ems:
     def cycle(self):
         self.running = True
         while self.running:
-
-            P_bess = self.bess.set_P(self.load.load - self.PV.P_kw)
-            self.genset.set_P(self.load.load - P_bess - self.PV.P_kw)
+            if self.controlPv :
+                P_pv = self.load.load - self.bess.max_charge
+                self.PV.set_p_kw(P_pv)
+                P_bess = self.bess.set_P(self.load.load - self.PV.P_kw)
+                self.genset.set_P(self.load.load - P_bess - self.PV.P_kw)
+            else :
+                P_bess = self.bess.set_P(self.load.load - self.PV.P_kw)
+                self.genset.set_P(self.load.load - P_bess - self.PV.P_kw)
             self.count += 1
 
             self.blackout_conditions()
@@ -88,3 +93,6 @@ class ems:
         self.bess.max_p_kw = p_max_bess
         self.bess.cap_kwh = cap_bess
         self.genset.max_P = p_max_genset
+    
+    def control_pv(self, bool):
+        self.controlPv = bool

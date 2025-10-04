@@ -13,6 +13,9 @@ class ConfInput(BaseModel):
     cap_bess: float
     p_max_genset: float
 
+class ControlPV(BaseModel):
+    controlPv: bool
+
 
 app = FastAPI()
 
@@ -37,6 +40,7 @@ def get_status():
         "P_max_bess":ems_system.bess.max_p_kw,
         "Cap_bess":ems_system.bess.cap_kwh,
         "P_max_genset": ems_system.genset.max_P,
+        "controlPv": ems_system.controlPv,
     }
 
 
@@ -60,6 +64,11 @@ def set_p_kw(input: ConfInput):
     ems_system.restart()
     return {"status": "conf updated"}
 
+
+@app.post("/controlpv")
+def controlPV(input: ControlPV):
+    ems_system.control_pv(input.controlPv)
+    return {"status": "PV control updated"}
 
 
 
