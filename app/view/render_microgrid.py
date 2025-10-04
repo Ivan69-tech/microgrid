@@ -289,8 +289,8 @@ def render_microgrid():
     df_load = pd.DataFrame({"x": range(len(st.session_state.p_load)), "y": st.session_state.p_load})
     df_soc = pd.DataFrame({"x": range(len(st.session_state.soc)), "y": st.session_state.soc})
 
-    # Graphique de flux de puissance
-    render_power_flow_chart(data)
+    # # Graphique de flux de puissance
+    # render_power_flow_chart(data)
     
     centerText("Courbes Puissance (kW)")
     AltChartMulti(
