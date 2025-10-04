@@ -20,7 +20,7 @@ jobs:
           script: |
             sudo -i
 
-            cd /home/$USER/code/microgrid
+            cd /home/$USER/microgrid
 
             docker-compose down
 
