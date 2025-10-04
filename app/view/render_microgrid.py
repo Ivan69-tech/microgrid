@@ -3,6 +3,7 @@ import requests
 from collections import deque
 import pandas as pd
 from view.component.chart import AltChartMulti
+from view.component.power_flow_chart import render_power_flow_chart
 from view.htmlFunctions.center import centerText
 
 
@@ -265,6 +266,9 @@ def render_microgrid():
     df_load = pd.DataFrame({"x": range(len(st.session_state.p_load)), "y": st.session_state.p_load})
     df_soc = pd.DataFrame({"x": range(len(st.session_state.soc)), "y": st.session_state.soc})
 
+    # Graphique de flux de puissance
+    render_power_flow_chart(data)
+    
     centerText("Courbes Puissance (kW)")
     AltChartMulti(
         datasets=[
