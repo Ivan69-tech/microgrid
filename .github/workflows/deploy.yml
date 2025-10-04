@@ -20,13 +20,13 @@ jobs:
           script: |
             sudo -i
 
-            cd /code/microgrid
+            cd /root/code/microgrid
 
-            docker compose down
+            docker-compose down
 
             git pull origin main
 
             docker build -t microgrid-app ./app
             docker build -t microgrid-controller ./controller
 
-            docker compose up -d
+            docker-compose up -d
