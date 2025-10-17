@@ -23,7 +23,7 @@ class ems:
         self.load = Load(conf["load"]["load"])
         self.controlPv = False
         self.simulatePV = False
-        self.hour = 0
+        self.hour = 7
         self.count = 0
         self.running = False
         self.thread = None
@@ -89,6 +89,7 @@ class ems:
         self.bess.soc = 50  # ou valeur initiale de SOC
         self.blackout = False
         self.load.load = 1000
+        self.hour = 7
         self.start()  # relance le thread
 
     def blackout_conditions(self):
@@ -124,5 +125,5 @@ class ems:
         if self.hour > 23 :
             self.hour = 0
         else:
-            self.hour += 1
+            self.hour += 0.5
         return self.hour

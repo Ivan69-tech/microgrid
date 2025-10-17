@@ -3,7 +3,6 @@ import requests
 from collections import deque
 import pandas as pd
 from view.component.chart import AltChartMulti
-from view.component.power_flow_chart import render_power_flow_chart
 from view.htmlFunctions.center import centerText
 
 
@@ -269,7 +268,10 @@ def render_microgrid():
         st.markdown(
             card_style.format(
                 title=f"PV",
-                value=f"{data['P_pv']} kW <br> Heure: {data.get('hour', 'N/A')}h",
+                value=f"{data['P_pv']} kW <br> Heure: " + (
+                    "N/A" if data.get('hour') is None
+                    else f"{int(data['hour'])}h{int((data['hour'] % 1) * 60):02d}min"
+                ),
                 subtitle="PV infos"
             ),
             unsafe_allow_html=True
