@@ -9,7 +9,7 @@ from view.htmlFunctions.center import centerText
 
 def render_microgrid():
 
-    HOST = "http://localhost"
+    HOST = "http://ems"
     centerText("Simulation d'un EMS off grid")
     centerText("Le BESS est en isochrone, il assume les variations de charge et tient le réseau. L'EMS adapte le setpoint du genset en P/Q mais n'a pas la main sur PV")
     centerText("Le BESS se décharge si le PV ne peut pas assumer toute la charge, si la batterie est complètement déchargée, le genset doit prendre la charge")
