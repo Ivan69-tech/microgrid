@@ -12,6 +12,7 @@ class ConfInput(BaseModel):
     p_max_bess: float
     cap_bess: float
     p_max_genset: float
+    p_max_pv: float
 
 class ControlPV(BaseModel):
     controlPv: bool
@@ -40,7 +41,10 @@ def get_status():
         "P_max_bess":ems_system.bess.max_p_kw,
         "Cap_bess":ems_system.bess.cap_kwh,
         "P_max_genset": ems_system.genset.max_P,
+        "P_max_pv": ems_system.PV.max_p_kw,
         "controlPv": ems_system.controlPv,
+        "simulatePV": ems_system.simulatePV,
+        "hour": ems_system.hour,
     }
 
 
@@ -60,7 +64,7 @@ def set_p_kw(input: PInput):
 
 @app.post("/setconf")
 def set_p_kw(input: ConfInput):
-    ems_system.set_conf(input.p_max_bess, input.cap_bess, input.p_max_genset)
+    ems_system.set_conf(input.p_max_bess, input.cap_bess, input.p_max_genset, input.p_max_pv)
     ems_system.restart()
     return {"status": "conf updated"}
 
@@ -70,6 +74,13 @@ def controlPV(input: ControlPV):
     ems_system.control_pv(input.controlPv)
     return {"status": "PV control updated"}
 
+class SimulatePV(BaseModel):
+    simulatePv: bool
+
+@app.post("/simulatepv")
+def simulatePV(input: SimulatePV):
+    ems_system.simulate_pv(input.simulatePv)
+    return {"status": f"PV simulation {'enabled' if input.simulatePv else 'disabled'}"}
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

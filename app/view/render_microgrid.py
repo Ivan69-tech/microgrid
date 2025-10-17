@@ -9,7 +9,7 @@ from view.htmlFunctions.center import centerText
 
 def render_microgrid():
 
-    HOST = "http://ems"
+    HOST = "http://localhost"
     centerText("Simulation d'un EMS off grid")
     centerText("Le BESS est en isochrone, il assume les variations de charge et tient le réseau. L'EMS adapte le setpoint du genset en P/Q mais n'a pas la main sur PV")
     centerText("Le BESS se décharge si le PV ne peut pas assumer toute la charge, si la batterie est complètement déchargée, le genset doit prendre la charge")
@@ -110,7 +110,7 @@ def render_microgrid():
         st.markdown(
             card_style2.format(
                 title="🌞 PV",
-                line1="Pmax = <b>illimitée 🙂</b>",
+                line1=f"Pmax = <b>{data.get('P_max_pv', 'N/A')} kW</b>",
                 line2="&nbsp;"
             ),
             unsafe_allow_html=True
@@ -127,7 +127,7 @@ def render_microgrid():
             st.session_state.pv_control_on = False
 
         pv_control = st.toggle(
-            "Maximise la prod PV automatiquement (l'EMS prend la main)",
+            "Maximise la prod PV automatiquement",
             value=st.session_state.pv_control_on,
             help="Active ou désactive le contrôle du PV"
         )
@@ -142,7 +142,29 @@ def render_microgrid():
                 st.error(f"Erreur HTTP (PV control): {e}")
             st.session_state.pv_control_last = pv_control
         st.session_state.pv_control_on = pv_control
-        centerText(str(data["controlPv"]))
+       
+
+        # Nouveau toggle pour simulation PV maximisée
+        if "pv_simulation" not in st.session_state:
+            st.session_state.pv_simulation = False
+
+        pv_simulation = st.toggle(
+            "Simulation PV ciel clair",
+            value=st.session_state.pv_simulation,
+            help="Active la simulation avec production PV simulée en ciel clair"
+        )
+        
+        # Envoi du POST si changement d'état pour le nouveau toggle
+        if "pv_simulation_last" not in st.session_state:
+            st.session_state.pv_simulation_last = st.session_state.pv_simulation
+        if pv_simulation != st.session_state.pv_simulation_last:
+            try:
+                resp = requests.post(f"{HOST}:8000/simulatepv", json={"simulatePv": pv_simulation})
+                resp.raise_for_status()
+            except Exception as e:
+                st.error(f"Erreur HTTP (PV simulation): {e}")
+            st.session_state.pv_simulation_last = pv_simulation
+        st.session_state.pv_simulation = pv_simulation
 
         centerText("Attention à ne pas trop injecter de PV sur le réseau au risque d'un blackout, ou demander une charge trop importante.")
         with st.form(key="pv_form"):
@@ -193,6 +215,12 @@ def render_microgrid():
                 value=1000,
                 step=20
             )
+            pv_p_max_value = st.number_input(
+                "Puissance max PV (kW)",
+                min_value=0,
+                value=int(data.get('P_max_pv', 1500)),
+                step=50
+            )
             submit = st.form_submit_button("Valider")  
 
         if submit:
@@ -201,7 +229,8 @@ def render_microgrid():
                     f"{HOST}:8000/setconf",
                     json={"p_max_bess": bess_p_max_value,
                           "cap_bess": bess_cap_value,
-                          "p_max_genset": genset_p_max_value}
+                          "p_max_genset": genset_p_max_value,
+                          "p_max_pv": pv_p_max_value}
                 )
                 resp.raise_for_status()
             except Exception as e:
@@ -237,8 +266,8 @@ def render_microgrid():
     with col3:
         st.markdown(
             card_style.format(
-                title="PV",
-                value=f"{data['P_pv']} kW <br> &nbsp;",
+                title=f"PV",
+                value=f"{data['P_pv']} kW <br> Heure: {data.get('hour', 'N/A')}h",
                 subtitle="PV infos"
             ),
             unsafe_allow_html=True

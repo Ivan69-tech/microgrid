@@ -4,7 +4,7 @@ genset:
   max_p_kW: 1200
 
 pv:
-  p_kW: 200
+  max_p_kW: 2000
 
 bess:
   cap_kwh: 20
