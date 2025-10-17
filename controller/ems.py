@@ -33,6 +33,15 @@ class ems:
 
     def cycle(self):
         while self.running:
+            # If blackout already active, freeze state and skip any dynamic updates
+            if self.blackout:
+                self.bess.set_P(0)
+                self.genset.set_P(0)
+                self.PV.set_p_kw(0)
+                self.load.set_p_load_kw(0)
+                time.sleep(self.dt)
+                continue
+
             if self.controlPv :
                 P_pv = self.load.load - self.bess.max_charge
                 self.PV.set_p_kw(P_pv)
@@ -52,12 +61,6 @@ class ems:
             self.count += 1
 
             self.blackout_conditions()
-            
-            if self.blackout:
-                self.bess.set_P(0)
-                self.genset.set_P(0)
-                self.PV.set_p_kw(0)
-                self.load.set_p_load_kw(0)
             
             time.sleep(self.dt)
 

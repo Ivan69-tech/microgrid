@@ -129,7 +129,8 @@ def render_microgrid():
         pv_control = st.toggle(
             "Maximise la prod PV automatiquement",
             value=st.session_state.pv_control_on,
-            help="Active ou désactive le contrôle du PV"
+            help="Active ou désactive le contrôle du PV",
+            disabled=st.session_state.get("pv_simulation", False)
         )
         # Envoi du POST si changement d'état
         if "pv_control_last" not in st.session_state:
@@ -151,7 +152,8 @@ def render_microgrid():
         pv_simulation = st.toggle(
             "Simulation PV ciel clair",
             value=st.session_state.pv_simulation,
-            help="Active la simulation avec production PV simulée en ciel clair"
+            help="Active la simulation avec production PV simulée en ciel clair",
+            disabled=st.session_state.get("pv_control_on", False)
         )
         
         # Envoi du POST si changement d'état pour le nouveau toggle
