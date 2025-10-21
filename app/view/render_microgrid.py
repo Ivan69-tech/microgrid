@@ -129,7 +129,7 @@ def render_microgrid():
             "Maximise la prod PV automatiquement",
             value=st.session_state.pv_control_on,
             help="Active ou désactive le contrôle du PV",
-            disabled=st.session_state.get("pv_simulation", False)
+            disabled=st.session_state.get("pv_simulation", False) or st.session_state.get("manual_control", False),
         )
         # Envoi du POST si changement d'état
         if "pv_control_last" not in st.session_state:
@@ -152,7 +152,7 @@ def render_microgrid():
             "Simulation PV ciel clair",
             value=st.session_state.pv_simulation,
             help="Active la simulation avec production PV simulée en ciel clair",
-            disabled=st.session_state.get("pv_control_on", False)
+            disabled=st.session_state.get("pv_control_on", False) or st.session_state.get("manual_control", False),
         )
         
         # Envoi du POST si changement d'état pour le nouveau toggle
@@ -167,6 +167,29 @@ def render_microgrid():
             st.session_state.pv_simulation_last = pv_simulation
         st.session_state.pv_simulation = pv_simulation
 
+        # Nouveau toggle pour controle manuel du PV
+        if "manual_control" not in st.session_state:
+            st.session_state.manual_control = True
+
+        manual_control = st.toggle(
+            "Controle manuel du PV",
+            value=st.session_state.manual_control,
+            help="Prend le controle du PV",
+            disabled=st.session_state.get("pv_control_on", False) or st.session_state.get("pv_simulation", False),
+        )
+        
+        # Envoi du POST si changement d'état pour le nouveau toggle
+        if "manual_control_last" not in st.session_state:
+            st.session_state.manual_control_last = st.session_state.manual_control
+        if manual_control != st.session_state.manual_control_last:
+            try:
+                resp = requests.post(f"{HOST}:8000/manual_control", json={"manual_control": manual_control})
+                resp.raise_for_status()
+            except Exception as e:
+                st.error(f"Erreur HTTP (PV simulation): {e}")
+            st.session_state.manual_control_last = manual_control
+        st.session_state.manual_control = manual_control
+
         centerText("Attention à ne pas trop injecter de PV sur le réseau au risque d'un blackout, ou demander une charge trop importante.")
         with st.form(key="pv_form"):
             pv_value = st.number_input(
@@ -179,7 +202,7 @@ def render_microgrid():
                 "Entrer la load (kW)",
                 min_value=0.0,
                 max_value=4000.0,
-                value=1500.0,
+                value=1000.0,
                 step=50.0
             )
             submit = st.form_submit_button("Valider")  

@@ -82,5 +82,13 @@ def simulatePV(input: SimulatePV):
     ems_system.simulate_pv(input.simulatePv)
     return {"status": f"PV simulation {'enabled' if input.simulatePv else 'disabled'}"}
 
+class ManualControl(BaseModel):
+    manual_control: bool
+
+@app.post("/manual_control")
+def manual_control(input: ManualControl):
+    ems_system.manual_control(input.manual_control)
+    return {"status": f"manual control {'enabled' if input.manual_control else 'disabled'}"}
+
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

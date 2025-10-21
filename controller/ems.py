@@ -120,6 +120,11 @@ class ems:
     def simulate_pv(self, bool):
         self.simulatePV = bool
         self.controlPv = not bool
+
+
+    def manual_control(self, bool):
+        self.simulatePV = not bool
+        self.controlPv = not bool
     
     def getTime(self):
         if self.hour > 23 :
