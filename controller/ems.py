@@ -22,7 +22,7 @@ class ems:
         self.PV = PV(conf["pv"]["max_p_kW"]) 
         self.load = Load(conf["load"]["load"])
         self.controlPv = False
-        self.simulatePV = False
+        self.simulatePv = False
         self.hour = 7
         self.count = 0
         self.running = False
@@ -42,19 +42,19 @@ class ems:
                 time.sleep(self.dt)
                 continue
 
+            # Incrémenter l'heure en permanence pour simuler le passage du temps
+            h = self.getTime()
+            
             if self.controlPv :
                 P_pv = self.load.load - self.bess.max_charge
                 self.PV.set_p_kw(P_pv)
                 P_bess = self.bess.set_P(self.load.load - self.PV.P_kw)
                 self.genset.set_P(self.load.load - P_bess - self.PV.P_kw)
-            elif self.simulatePV:
-                h = self.getTime()
+            elif self.simulatePv:
                 P_pv = PV.simulate_Pv_prod(self.PV.max_p_kw, h)
                 self.PV.set_p_kw(P_pv)
                 P_bess = self.bess.set_P(self.load.load - P_pv)
                 self.genset.set_P(self.load.load - P_bess - P_pv)
-
-            
             else :
                 P_bess = self.bess.set_P(self.load.load - self.PV.P_kw)
                 self.genset.set_P(self.load.load - P_bess - self.PV.P_kw)
@@ -115,15 +115,15 @@ class ems:
     
     def control_pv(self, bool):
         self.controlPv = bool
-        self.simulatePV = not bool
+        self.simulatePv = not bool
 
     def simulate_pv(self, bool):
-        self.simulatePV = bool
+        self.simulatePv = bool
         self.controlPv = not bool
 
 
     def manual_control(self, bool):
-        self.simulatePV = not bool
+        self.simulatePv = not bool
         self.controlPv = not bool
     
     def getTime(self):

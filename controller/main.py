@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from ems import ems
 import yaml
@@ -19,6 +20,15 @@ class ControlPV(BaseModel):
 
 
 app = FastAPI()
+
+# Configuration CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # En production, spécifiez les domaines autorisés
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Charger ton EMS
 with open("conf.yaml", "r") as f:
@@ -43,7 +53,7 @@ def get_status():
         "P_max_genset": ems_system.genset.max_P,
         "P_max_pv": ems_system.PV.max_p_kw,
         "controlPv": ems_system.controlPv,
-        "simulatePV": ems_system.simulatePV,
+        "simulatePV": ems_system.simulatePv,
         "hour": ems_system.hour,
     }
 

@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  ems:
+    image: ems  
+    container_name: ems
+    ports:
+      - "8001:8000"              
+    networks:
+      - net
+    restart: unless-stopped
+
+  web-frontend:
+    build: ./web-frontend
+    container_name: web-frontend
+    ports:
+      - "3001:80"
+    networks:
+      - net
+    depends_on:
+      - ems
+    restart: unless-stopped
+    environment:
+      - REACT_APP_API_URL=http://localhost:3001
+
+networks:
+  net:
+    external: true
