@@ -43,7 +43,7 @@ class ems:
                 continue
 
             # Incrémenter l'heure en permanence pour simuler le passage du temps
-            h = self.getTime()
+            
             
             if self.controlPv :
                 P_pv = self.load.load - self.bess.max_charge
@@ -55,6 +55,7 @@ class ems:
                 self.PV.set_p_kw(P_pv)
                 P_bess = self.bess.set_P(self.load.load - P_pv)
                 self.genset.set_P(self.load.load - P_bess - P_pv)
+                h = self.getTime()
             else :
                 P_bess = self.bess.set_P(self.load.load - self.PV.P_kw)
                 self.genset.set_P(self.load.load - P_bess - self.PV.P_kw)
