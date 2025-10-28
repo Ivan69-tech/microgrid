@@ -23,6 +23,9 @@ const PowerFlowDiagram: React.FC<PowerFlowDiagramProps> = ({
   const bessToLoad = Math.max(0, load - pv);
   const gensetToLoad = Math.max(0, load - pv - Math.abs(bess));
   
+  // Calculer les flux avec le réseau
+  const networkFlow = pv + genset - load - Math.abs(bess);
+  
   // Couleurs selon l'état
   const getFlowColor = (power: number) => {
     if (power > 0) return 'text-green-500';
@@ -42,6 +45,25 @@ const PowerFlowDiagram: React.FC<PowerFlowDiagramProps> = ({
     return '🔋'; // Neutre
   };
 
+  // Fonction pour déterminer la couleur des flèches réseau
+  const getNetworkArrowColor = (power: number) => {
+    if (power > 0) return 'text-green-500'; // Injection (vert)
+    if (power < 0) return 'text-red-500'; // Soutirage (rouge)
+    return 'text-gray-400'; // Neutre
+  };
+
+  // Fonction pour déterminer la direction des flèches
+  const getArrowDirection = (power: number) => {
+    if (power > 0) return '→'; // Vers le réseau (injection)
+    if (power < 0) return '←'; // Depuis le réseau (soutirage)
+    return '↔'; // Bidirectionnel
+  };
+
+  // Fonction pour déterminer si une flèche doit être affichée
+  const shouldShowArrow = (power: number) => {
+    return Math.abs(power) > 0.1; // Seuil minimal pour afficher la flèche
+  };
+
   return (
     <div className="card p-8 mt-8">
       <h3 className="text-2xl font-bold text-center text-gray-800 mb-8">
@@ -50,7 +72,7 @@ const PowerFlowDiagram: React.FC<PowerFlowDiagramProps> = ({
       
       <div className="relative">
         {/* Layout avec réseau au centre */}
-        <div className="flex flex-col items-center space-y-8">
+        <div className="flex flex-col items-center space-y-12">
           
           {/* PV (en haut) */}
           <div className="text-center">
@@ -60,7 +82,7 @@ const PowerFlowDiagram: React.FC<PowerFlowDiagramProps> = ({
           </div>
 
           {/* Ligne horizontale avec BESS, Réseau, Load */}
-          <div className="flex items-center justify-center space-x-24">
+          <div className="flex items-center justify-center space-x-32">
             
             {/* BESS (à gauche) */}
             <div className="text-center">
@@ -99,41 +121,46 @@ const PowerFlowDiagram: React.FC<PowerFlowDiagramProps> = ({
           </div>
         </div>
 
-        {/* Suppression des étiquettes de puissance */}
-
-        {/* Légende améliorée */}
-        <div className="mt-8 bg-gray-50 rounded-xl p-6">
-          <h4 className="text-lg font-semibold text-gray-800 mb-4 text-center">Légende des Flux</h4>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
-            <div className="flex items-center space-x-3 bg-green-50 rounded-lg p-3 border border-green-200">
-              <div className="w-5 h-5 bg-green-500 rounded-full shadow-sm flex items-center justify-center">
-                <span className="text-white text-xs font-bold">+</span>
-              </div>
-              <div>
-                <div className="font-semibold text-green-800">Injection</div>
-                <div className="text-green-600 text-xs">Production vers le réseau</div>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3 bg-red-50 rounded-lg p-3 border border-red-200">
-              <div className="w-5 h-5 bg-red-500 rounded-full shadow-sm flex items-center justify-center">
-                <span className="text-white text-xs font-bold">-</span>
-              </div>
-              <div>
-                <div className="font-semibold text-red-800">Soutirage</div>
-                <div className="text-red-600 text-xs">Consommation depuis le réseau</div>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3 bg-gray-50 rounded-lg p-3 border border-gray-200">
-              <div className="w-5 h-5 bg-gray-400 rounded-full shadow-sm flex items-center justify-center">
-                <span className="text-white text-xs font-bold">0</span>
-              </div>
-              <div>
-                <div className="font-semibold text-gray-800">Équilibre</div>
-                <div className="text-gray-600 text-xs">Aucun échange réseau</div>
-              </div>
+        {/* Flèches positionnées entre les composants et le réseau */}
+        
+        {/* Flèche PV vers Réseau */}
+        {shouldShowArrow(pv) && (
+          <div className="absolute top-28 left-1/2 transform -translate-x-1/2">
+            <div className={`text-4xl font-bold ${getNetworkArrowColor(pv)} drop-shadow-lg animate-pulse`}>
+              {pv > 0 ? '↓' : '↑'}
             </div>
           </div>
-        </div>
+        )}
+
+        {/* Flèche BESS vers Réseau */}
+        {shouldShowArrow(bess) && (
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-32 -translate-y-1/2">
+            <div className={`text-4xl font-bold ${getNetworkArrowColor(bess)} drop-shadow-lg animate-pulse`}>
+              {bess > 0 ? '→' : '←'}
+            </div>
+          </div>
+        )}
+
+        {/* Flèche Load vers Réseau */}
+        {shouldShowArrow(load) && (
+          <div className="absolute top-1/2 left-1/2 transform translate-x-32 -translate-y-1/2">
+            <div className={`text-4xl font-bold ${getNetworkArrowColor(-load)} drop-shadow-lg animate-pulse`}>
+              ←
+            </div>
+          </div>
+        )}
+
+        {/* Flèche Genset vers Réseau */}
+        {shouldShowArrow(genset) && (
+          <div className="absolute bottom-28 left-1/2 transform -translate-x-1/2">
+            <div className={`text-4xl font-bold ${getNetworkArrowColor(genset)} drop-shadow-lg animate-pulse`}>
+              {genset > 0 ? '↑' : '↓'}
+            </div>
+          </div>
+        )}
+
+        {/* Suppression des étiquettes de puissance */}
+
       </div>
     </div>
   );
