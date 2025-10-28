@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 interface PowerFlowDiagramProps {
   pv: number;
@@ -184,12 +184,85 @@ const PowerFlowDiagram: React.FC<PowerFlowDiagramProps> = ({
   blackout
 }) => {
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [positions, setPositions] = useState<any>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const pvRef = useRef<HTMLDivElement>(null);
+  const bessRef = useRef<HTMLDivElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const loadRef = useRef<HTMLDivElement>(null);
+  const gensetRef = useRef<HTMLDivElement>(null);
 
   // Calculer les flux (pour usage futur si nécessaire)
   // const pvToLoad = Math.min(pv, load);
   // const pvToBess = Math.max(0, pv - load);
   // const bessToLoad = Math.max(0, load - pv);
   // const gensetToLoad = Math.max(0, load - pv - Math.abs(bess));
+
+  // Fonction pour calculer les positions dynamiques des centres et bordures des composants
+  const calculateComponentPositions = () => {
+    if (!containerRef.current) return null;
+    
+    const containerRect = containerRef.current.getBoundingClientRect();
+    const containerWidth = containerRect.width;
+    const containerHeight = containerRect.height;
+    
+    // Obtenir les positions réelles des composants avec centres et bordures
+    const getComponentPositions = (ref: React.RefObject<HTMLDivElement>) => {
+      if (!ref.current) return { 
+        center: { x: 0, y: 0 },
+        borders: { top: 0, bottom: 0, left: 0, right: 0 }
+      };
+      const rect = ref.current.getBoundingClientRect();
+      const containerRect = containerRef.current!.getBoundingClientRect();
+      return {
+        center: {
+          x: rect.left + rect.width / 2 - containerRect.left,
+          y: rect.top + rect.height / 2 - containerRect.top
+        },
+        borders: {
+          top: rect.top - containerRect.top,
+          bottom: rect.bottom - containerRect.top,
+          left: rect.left - containerRect.left,
+          right: rect.right - containerRect.left
+        }
+      };
+    };
+
+    const pvPos = getComponentPositions(pvRef);
+    const bessPos = getComponentPositions(bessRef);
+    const gridPos = getComponentPositions(gridRef);
+    const loadPos = getComponentPositions(loadRef);
+    const gensetPos = getComponentPositions(gensetRef);
+    
+    return {
+      pv: pvPos,
+      bess: bessPos,
+      grid: gridPos,
+      load: loadPos,
+      genset: gensetPos
+    };
+  };
+
+  // Mettre à jour les positions lors du redimensionnement
+  useEffect(() => {
+    const updatePositions = () => {
+      const newPositions = calculateComponentPositions();
+      if (newPositions) {
+        setPositions(newPositions);
+      }
+    };
+
+    // Calculer les positions initiales
+    updatePositions();
+
+    // Écouter les changements de taille de fenêtre
+    window.addEventListener('resize', updatePositions);
+    
+    // Nettoyer l'écouteur
+    return () => {
+      window.removeEventListener('resize', updatePositions);
+    };
+  }, [pv, load, bess, genset, soc, blackout]);
   
   // Couleurs selon le mode
   const colors = {
@@ -199,16 +272,16 @@ const PowerFlowDiagram: React.FC<PowerFlowDiagramProps> = ({
       text: 'text-gray-800',
       textSecondary: 'text-gray-600',
       border: 'border-gray-200',
-      pv: 'text-yellow-600',
+      pv: 'text-green-600',
       bess: bess > 0 ? 'text-green-600' : bess < 0 ? 'text-red-600' : 'text-gray-500',
-      genset: 'text-blue-600',
-      load: 'text-orange-600',
+      genset: 'text-green-600',
+      load: 'text-red-600',
       grid: blackout ? 'text-red-600' : 'text-green-600',
       flow: {
-        pv: '#f59e0b',
+        pv: '#10b981',
         bess: bess > 0 ? '#10b981' : '#ef4444',
-        genset: '#3b82f6',
-        load: '#f97316'
+        genset: '#10b981',
+        load: '#ef4444'
       }
     },
     dark: {
@@ -217,16 +290,16 @@ const PowerFlowDiagram: React.FC<PowerFlowDiagramProps> = ({
       text: 'text-gray-100',
       textSecondary: 'text-gray-300',
       border: 'border-gray-700',
-      pv: 'text-yellow-400',
+      pv: 'text-green-400',
       bess: bess > 0 ? 'text-green-400' : bess < 0 ? 'text-red-400' : 'text-gray-400',
-      genset: 'text-blue-400',
-      load: 'text-orange-400',
+      genset: 'text-green-400',
+      load: 'text-red-400',
       grid: blackout ? 'text-red-400' : 'text-green-400',
       flow: {
-        pv: '#fbbf24',
+        pv: '#34d399',
         bess: bess > 0 ? '#34d399' : '#f87171',
-        genset: '#60a5fa',
-        load: '#fb923c'
+        genset: '#34d399',
+        load: '#f87171'
       }
     }
   };
@@ -298,12 +371,12 @@ const PowerFlowDiagram: React.FC<PowerFlowDiagramProps> = ({
           </button>
         </div>
         
-        <div className="relative min-h-[600px] lg:min-h-[700px] w-full">
+        <div ref={containerRef} className="relative min-h-[600px] lg:min-h-[700px] w-full">
           {/* Layout principal */}
           <div className="flex flex-col items-center justify-center h-full space-y-8 lg:space-y-16">
           
           {/* PV (en haut) */}
-            <div className={`text-center p-4 lg:p-6 rounded-2xl ${theme.card} border ${theme.border} shadow-lg hover:shadow-xl transition-all duration-300 w-full max-w-xs lg:max-w-sm`}>
+            <div ref={pvRef} className={`text-center p-4 lg:p-6 rounded-2xl ${theme.card} border ${theme.border} shadow-lg hover:shadow-xl transition-all duration-300 w-full max-w-xs lg:max-w-sm`}>
               <div className="mb-3 lg:mb-4">
                 <SVGIcon 
                   name="solar" 
@@ -325,7 +398,7 @@ const PowerFlowDiagram: React.FC<PowerFlowDiagramProps> = ({
             <div className="flex flex-col lg:flex-row items-center justify-center space-y-8 lg:space-y-0 lg:space-x-8 xl:space-x-20 w-full">
             
             {/* BESS (à gauche) */}
-              <div className={`text-center p-4 lg:p-6 rounded-2xl ${theme.card} border ${theme.border} shadow-lg hover:shadow-xl transition-all duration-300 w-full max-w-xs lg:max-w-sm`}>
+              <div ref={bessRef} className={`text-center p-4 lg:p-6 rounded-2xl ${theme.card} border ${theme.border} shadow-lg hover:shadow-xl transition-all duration-300 w-full max-w-xs lg:max-w-sm`}>
                 <div className="mb-3 lg:mb-4">
                   <SVGIcon 
                     name={bess > 0 ? "charging" : bess < 0 ? "discharging" : "battery"} 
@@ -340,7 +413,7 @@ const PowerFlowDiagram: React.FC<PowerFlowDiagramProps> = ({
                 </div>
                 <div className={`text-lg lg:text-xl font-bold ${theme.text}`}>BESS</div>
                 <div className={`text-2xl lg:text-3xl font-bold ${theme.bess} mb-2`}>
-                {Math.abs(bess).toFixed(1)} kW
+                {bess < 0 ? bess.toFixed(1) : Math.abs(bess).toFixed(1)} kW
                 </div>
                 <div className={`text-xs lg:text-sm ${theme.textSecondary}`}>
                   SOC: {soc.toFixed(1)}%
@@ -351,7 +424,7 @@ const PowerFlowDiagram: React.FC<PowerFlowDiagramProps> = ({
             </div>
 
             {/* Réseau (au centre) */}
-              <div className={`text-center p-4 lg:p-6 rounded-2xl ${theme.card} border ${theme.border} shadow-lg hover:shadow-xl transition-all duration-300 w-full max-w-xs lg:max-w-sm ${blackout ? 'ring-2 ring-red-500' : 'ring-2 ring-green-500'}`}>
+              <div ref={gridRef} className={`text-center p-4 lg:p-6 rounded-2xl ${theme.card} border ${theme.border} shadow-lg hover:shadow-xl transition-all duration-300 w-full max-w-xs lg:max-w-sm ${blackout ? 'ring-2 ring-red-500' : 'ring-2 ring-green-500'}`}>
                 <div className="mb-3 lg:mb-4">
                   <SVGIcon 
                     name={blackout ? "warning" : "grid"} 
@@ -374,7 +447,7 @@ const PowerFlowDiagram: React.FC<PowerFlowDiagramProps> = ({
               </div>
 
               {/* Load (à droite) */}
-              <div className={`text-center p-4 lg:p-6 rounded-2xl ${theme.card} border ${theme.border} shadow-lg hover:shadow-xl transition-all duration-300 w-full max-w-xs lg:max-w-sm`}>
+              <div ref={loadRef} className={`text-center p-4 lg:p-6 rounded-2xl ${theme.card} border ${theme.border} shadow-lg hover:shadow-xl transition-all duration-300 w-full max-w-xs lg:max-w-sm`}>
                 <div className="mb-3 lg:mb-4">
                   <SVGIcon 
                     name="load" 
@@ -388,13 +461,13 @@ const PowerFlowDiagram: React.FC<PowerFlowDiagramProps> = ({
                   />
                 </div>
                 <div className={`text-lg lg:text-xl font-bold ${theme.text}`}>Charge</div>
-                <div className={`text-2xl lg:text-3xl font-bold ${theme.load} mb-2`}>{load.toFixed(1)} kW</div>
+                <div className={`text-2xl lg:text-3xl font-bold ${theme.load} mb-2`}>-{load.toFixed(1)} kW</div>
                 <div className={`text-xs lg:text-sm ${theme.textSecondary}`}>Consommation</div>
               </div>
             </div>
 
             {/* Genset (en bas) */}
-            <div className={`text-center p-4 lg:p-6 rounded-2xl ${theme.card} border ${theme.border} shadow-lg hover:shadow-xl transition-all duration-300 w-full max-w-xs lg:max-w-sm`}>
+            <div ref={gensetRef} className={`text-center p-4 lg:p-6 rounded-2xl ${theme.card} border ${theme.border} shadow-lg hover:shadow-xl transition-all duration-300 w-full max-w-xs lg:max-w-sm`}>
               <div className="mb-3 lg:mb-4">
                 <SVGIcon 
                   name="generator" 
@@ -415,103 +488,115 @@ const PowerFlowDiagram: React.FC<PowerFlowDiagramProps> = ({
 
           {/* Lignes de flux animées - Desktop */}
           <div className="hidden xl:block">
-            {/* Flux PV vers Réseau (vertical, du haut vers le centre) */}
-            {shouldShowFlow(pv) && (
-              <AnimatedFlowLine
-                from={{ x: 50, y: 200 }}   // Centre bas de la carte PV
-                to={{ x: 50, y: 350 }}     // Centre haut de la carte Réseau
-                color={theme.flow.pv}
-                intensity={Math.abs(pv) / 10}
-                direction="forward"
-                label={`${pv.toFixed(1)} kW`}
-              />
-            )}
+            {positions && (
+              <>
+                {/* Flux PV vers Réseau (vertical, du haut vers le centre) */}
+                {shouldShowFlow(pv) && (
+                  <AnimatedFlowLine
+                    from={{ x: positions.pv.center.x, y: positions.pv.borders.bottom }}   // Bordure bas de la carte PV
+                    to={{ x: positions.grid.center.x, y: positions.grid.borders.top }} // Bordure haut de la carte Réseau
+                    color={theme.flow.pv}
+                    intensity={Math.abs(pv) / 10}
+                    direction="forward"
+                  />
+                )}
 
-            {/* Flux BESS vers Réseau (horizontal, de gauche vers le centre) */}
-            {shouldShowFlow(bess) && (
-              <AnimatedFlowLine
-                from={{ x: 200, y: 50 }}    // Centre droite de la carte BESS
-                to={{ x: 300, y: 50 }}      // Centre gauche de la carte Réseau
-                color={theme.flow.bess}
-                intensity={Math.abs(bess) / 10}
-                direction={bess > 0 ? "forward" : "backward"}
-                label={`${Math.abs(bess).toFixed(1)} kW`}
-              />
-            )}
+                {/* Flux BESS ↔ Réseau (horizontal, bidirectionnel) */}
+                {shouldShowFlow(bess) && (
+                  <AnimatedFlowLine
+                    from={bess > 0 ? 
+                      { x: positions.bess.borders.right, y: positions.bess.center.y } : 
+                      { x: positions.grid.borders.left, y: positions.grid.center.y }
+                    }
+                    to={bess > 0 ? 
+                      { x: positions.grid.borders.left, y: positions.grid.center.y } : 
+                      { x: positions.bess.borders.right, y: positions.bess.center.y }
+                    }
+                    color={theme.flow.bess}
+                    intensity={Math.abs(bess) / 10}
+                    direction={bess > 0 ? "forward" : "backward"}
+                  />
+                )}
 
-            {/* Flux Réseau vers Load (horizontal, du centre vers la droite) */}
-            {shouldShowFlow(load) && (
-              <AnimatedFlowLine
-                from={{ x: 400, y: 50 }}    // Centre droite de la carte Réseau
-                to={{ x: 500, y: 50 }}      // Centre gauche de la carte Load
-                color={theme.flow.load}
-                intensity={Math.abs(load) / 10}
-                direction="backward"
-                label={`${load.toFixed(1)} kW`}
-              />
-            )}
+                {/* Flux Réseau vers Load (horizontal, du centre vers la droite) */}
+                {shouldShowFlow(load) && (
+                  <AnimatedFlowLine
+                    from={{ x: positions.grid.borders.right, y: positions.grid.center.y }}    // Bordure droite de la carte Réseau
+                    to={{ x: positions.load.borders.left, y: positions.load.center.y }}      // Bordure gauche de la carte Load
+                    color={theme.flow.load}
+                    intensity={Math.abs(load) / 10}
+                    direction="backward"
+                  />
+                )}
 
-            {/* Flux Genset vers Réseau (vertical, du bas vers le centre) */}
-            {shouldShowFlow(genset) && (
-              <AnimatedFlowLine
-                from={{ x: 50, y: 500 }}    // Centre haut de la carte Genset
-                to={{ x: 50, y: 450 }}      // Centre bas de la carte Réseau
-                color={theme.flow.genset}
-                intensity={Math.abs(genset) / 10}
-                direction="forward"
-                label={`${genset.toFixed(1)} kW`}
-              />
+                {/* Flux Genset vers Réseau (vertical, du bas vers le centre) */}
+                {shouldShowFlow(genset) && (
+                  <AnimatedFlowLine
+                    from={{ x: positions.genset.center.x, y: positions.genset.borders.top }}    // Bordure haut de la carte Genset
+                    to={{ x: positions.grid.center.x, y: positions.grid.borders.bottom }}      // Bordure bas de la carte Réseau
+                    color={theme.flow.genset}
+                    intensity={Math.abs(genset) / 10}
+                    direction="forward"
+                  />
+                )}
+              </>
             )}
           </div>
 
           {/* Lignes de flux animées - Large screens */}
           <div className="hidden lg:block xl:hidden">
-            {/* Flux PV vers Réseau (vertical, du haut vers le centre) */}
-            {shouldShowFlow(pv) && (
-              <AnimatedFlowLine
-                from={{ x: 40, y: 180 }}    // Centre bas de la carte PV
-                to={{ x: 40, y: 320 }}      // Centre haut de la carte Réseau
-                color={theme.flow.pv}
-                intensity={Math.abs(pv) / 10}
-                direction="forward"
-                label={`${pv.toFixed(1)} kW`}
-              />
-            )}
+            {positions && (
+              <>
+                {/* Flux PV vers Réseau (vertical, du haut vers le centre) */}
+                {shouldShowFlow(pv) && (
+                  <AnimatedFlowLine
+                    from={{ x: positions.pv.center.x, y: positions.pv.borders.bottom }}    // Bordure bas de la carte PV
+                    to={{ x: positions.grid.center.x, y: positions.grid.borders.top }}      // Bordure haut de la carte Réseau
+                    color={theme.flow.pv}
+                    intensity={Math.abs(pv) / 10}
+                    direction="forward"
+                  />
+                )}
 
-            {/* Flux BESS vers Réseau (horizontal, de gauche vers le centre) */}
-            {shouldShowFlow(bess) && (
-              <AnimatedFlowLine
-                from={{ x: 180, y: 40 }}     // Centre droite de la carte BESS
-                to={{ x: 260, y: 40 }}       // Centre gauche de la carte Réseau
-                color={theme.flow.bess}
-                intensity={Math.abs(bess) / 10}
-                direction={bess > 0 ? "forward" : "backward"}
-                label={`${Math.abs(bess).toFixed(1)} kW`}
-              />
-            )}
+                {/* Flux BESS ↔ Réseau (horizontal, bidirectionnel) */}
+                {shouldShowFlow(bess) && (
+                  <AnimatedFlowLine
+                    from={bess > 0 ? 
+                      { x: positions.bess.borders.right, y: positions.bess.center.y } : 
+                      { x: positions.grid.borders.left, y: positions.grid.center.y }
+                    }
+                    to={bess > 0 ? 
+                      { x: positions.grid.borders.left, y: positions.grid.center.y } : 
+                      { x: positions.bess.borders.right, y: positions.bess.center.y }
+                    }
+                    color={theme.flow.bess}
+                    intensity={Math.abs(bess) / 10}
+                    direction={bess > 0 ? "forward" : "backward"}
+                  />
+                )}
 
-            {/* Flux Réseau vers Load (horizontal, du centre vers la droite) */}
-            {shouldShowFlow(load) && (
-              <AnimatedFlowLine
-                from={{ x: 340, y: 40 }}     // Centre droite de la carte Réseau
-                to={{ x: 420, y: 40 }}       // Centre gauche de la carte Load
-                color={theme.flow.load}
-                intensity={Math.abs(load) / 10}
-                direction="backward"
-                label={`${load.toFixed(1)} kW`}
-              />
-            )}
+                {/* Flux Réseau vers Load (horizontal, du centre vers la droite) */}
+                {shouldShowFlow(load) && (
+                  <AnimatedFlowLine
+                    from={{ x: positions.grid.borders.right, y: positions.grid.center.y }}     // Bordure droite de la carte Réseau
+                    to={{ x: positions.load.borders.left, y: positions.load.center.y }}       // Bordure gauche de la carte Load
+                    color={theme.flow.load}
+                    intensity={Math.abs(load) / 10}
+                    direction="backward"
+                  />
+                )}
 
-            {/* Flux Genset vers Réseau (vertical, du bas vers le centre) */}
-            {shouldShowFlow(genset) && (
-              <AnimatedFlowLine
-                from={{ x: 40, y: 460 }}     // Centre haut de la carte Genset
-                to={{ x: 40, y: 400 }}       // Centre bas de la carte Réseau
-                color={theme.flow.genset}
-                intensity={Math.abs(genset) / 10}
-                direction="forward"
-                label={`${genset.toFixed(1)} kW`}
-              />
+                {/* Flux Genset vers Réseau (vertical, du bas vers le centre) */}
+                {shouldShowFlow(genset) && (
+                  <AnimatedFlowLine
+                    from={{ x: positions.genset.center.x, y: positions.genset.borders.top }}     // Bordure haut de la carte Genset
+                    to={{ x: positions.grid.center.x, y: positions.grid.borders.bottom }}       // Bordure bas de la carte Réseau
+                    color={theme.flow.genset}
+                    intensity={Math.abs(genset) / 10}
+                    direction="forward"
+                  />
+                )}
+              </>
             )}
           </div>
 
